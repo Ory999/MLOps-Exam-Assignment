@@ -14,7 +14,7 @@ MLOps-Exam-Assignment/
 │
 ├── .github/
 │   └── workflows/
-│       └── pipeline.yml          ← GitHub Actions: quarterly cron + push trigger
+│       └── pipeline.yml          ← GitHub Actions: (https://github.com/Ory999/MLOps-Exam-Assignment/actions/runs/24525069469)
 │
 ├── artifacts/                    ← All pipeline outputs (contents gitignored)
 │   ├── raw/                      ← Timestamped raw CSVs from DST API
