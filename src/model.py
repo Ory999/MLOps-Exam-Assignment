@@ -227,7 +227,7 @@ def log_to_mlflow(
 
         # Log feature importances as JSON
         if "feature_importances" in result:
-            mlflow.log_dict(result["feature_importances"], "feature_importances.json")
+            mlflow.log_dict({k: float(v) for k, v in result["feature_importances"].items()}, "feature_importances.json")
 
         run_id = mlflow.active_run().info.run_id
         logger.info(f"MLflow run logged: {run_id}")
