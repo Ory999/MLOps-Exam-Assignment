@@ -1,0 +1,109 @@
+name: DST Sector Health Pipeline
+
+on:
+  # ── Scheduled trigger ─────────────────────────────────────────────
+  # DST releases QBD data quarterly (approx. Feb, May, Aug, Nov).
+  # This cron runs on the 10th of those months at 09:00 UTC
+  # (DST publishes at 08:00 Danish time = 07:00 UTC).
+  schedule:
+    - cron: "0 9 10 2,5,8,11 *"
+
+  # ── Manual trigger ────────────────────────────────────────────────
+  # Allows triggering the pipeline from the GitHub UI
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual run"
+        required: false
+        default: "Manual trigger"
+
+  # ── Push trigger (CI) ─────────────────────────────────────────────
+  # Run the pipeline on push to main (for testing)
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "config.yaml"
+      - "run_pipeline.py"
+
+jobs:
+  pipeline:
+    name: Run MLOps Pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create artifact directories
+        run: mkdir -p artifacts/{raw,processed,models,metrics,reports,mlflow}
+
+      # ── Restore previous artifacts (models + processed data) ──────
+      # This lets us compare new model performance against the last
+      # trained model, rather than starting from scratch every run.
+      - name: Restore artifact cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            artifacts/models/
+            artifacts/processed/
+            artifacts/mlflow/
+          key: artifacts-${{ runner.os }}-${{ github.ref_name }}
+          restore-keys: |
+            artifacts-${{ runner.os }}-
+
+      # ── Run the pipeline ──────────────────────────────────────────
+      - name: Run pipeline
+        run: python run_pipeline.py
+
+      # ── Upload artifacts ──────────────────────────────────────────
+      # Make model + reports available for download from the Actions UI
+      - name: Upload pipeline artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-artifacts-${{ github.run_number }}
+          path: |
+            artifacts/models/model_latest.joblib
+            artifacts/metrics/
+            artifacts/reports/monitoring_latest.json
+            artifacts/reports/*.png
+          retention-days: 90
+
+      # ── Post monitoring summary to PR / commit ────────────────────
+      - name: Post monitoring summary
+        if: always()
+        run: |
+          python - <<'EOF'
+          import json, os
+          report_path = "artifacts/reports/monitoring_latest.json"
+          if os.path.exists(report_path):
+              with open(report_path) as f:
+                  r = json.load(f)
+              perf = r.get("performance", {})
+              drift = r.get("data_drift", {})
+              print("=" * 50)
+              print("PIPELINE MONITORING SUMMARY")
+              print("=" * 50)
+              print(f"Model MAE:        {perf.get('current_mae', 'N/A')}")
+              print(f"Baseline MAE:     {perf.get('baseline_mae', 'N/A')}")
+              print(f"Degradation:      {perf.get('degradation_pct', 'N/A')}%")
+              print(f"Retrain flag:     {perf.get('retrain_flag', 'N/A')}")
+              print(f"Features drifted: {drift.get('n_features_drifted', 'N/A')}/{drift.get('n_features_tested', 'N/A')}")
+              print(f"Drift flag:       {drift.get('overall_drift_flag', 'N/A')}")
+          EOF
+
+      # ── Notify on failure ─────────────────────────────────────────
+      - name: Notify on failure
+        if: failure()
+        run: echo "Pipeline failed — check logs above"
+        # In production: add Slack / email notification here

@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+
+  # Pipeline runner
+  # Runs the full ingest → preprocess → train → monitor pipeline.
+  # In production, this is triggered by GitHub Actions cron.
+  # Locally: docker compose run pipeline
+  pipeline:
+    build: .
+    command: python run_pipeline.py
+    volumes:
+      - ./artifacts:/app/artifacts   # persist all artifacts to host
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - sectornet
+
+  # FastAPI prediction service
+  # Exposes model predictions and monitoring data via REST API.
+  # Run the pipeline service first to train the model, then start this.
+  # Start: docker compose up api
+  api:
+    build: .
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./artifacts:/app/artifacts   # read trained models + reports
+    networks:
+      - sectornet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MLflow tracking server
+  # Serves the MLflow UI for experiment browsing.
+  # Open http://localhost:5000 after starting.
+  mlflow:
+    image: python:3.11-slim
+    command: >
+      bash -c "pip install mlflow --quiet &&
+               mlflow server
+               --backend-store-uri /mlflow
+               --default-artifact-root /mlflow
+               --host 0.0.0.0
+               --port 5000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./artifacts/mlflow:/mlflow
+    networks:
+      - sectornet
+
+networks:
+  sectornet:
+    driver: bridge

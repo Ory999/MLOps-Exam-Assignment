@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+.env
+.DS_Store
+
+# Keep artifact folder structure but not the contents
+artifacts/raw/*.csv
+artifacts/processed/*.csv
+artifacts/models/*.joblib
+artifacts/metrics/*.json
+artifacts/reports/*.json
+artifacts/reports/*.png
+artifacts/mlflow/
+
+# Keep the latest files (these are what the API uses)
+!artifacts/models/.gitkeep
+!artifacts/raw/.gitkeep
+!artifacts/processed/.gitkeep
+!artifacts/metrics/.gitkeep
+!artifacts/reports/.gitkeep
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

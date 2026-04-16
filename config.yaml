@@ -1,0 +1,56 @@
+dst_api:
+  base_url: "https://api.statbank.dk/v1"
+  language: "en"
+  format: "CSV"
+
+tables:
+  bankruptcies: "KONK4"          # Monthly bankruptcies by industry
+  new_enterprises: "DEMO14"      # Annual enterprise births by industry (Business Demography)
+  employment: "RAS200"           # Employment by industry (annual)
+
+# DB07 10-grouping sector codes used across KONK4 and DEMO14.
+# These are the numeric codes 1–10 as returned by the DST API.
+# NOTE: these are for documentation only — the pipeline fetches all
+# sectors dynamically from the API using [str(i) for i in range(1, 11)].
+sectors:
+  - code: "1"
+    name: "Agriculture, forestry and fishing"
+  - code: "2"
+    name: "Manufacturing, mining and quarrying"
+  - code: "3"
+    name: "Energy, water supply, sewerage and waste"
+  - code: "4"
+    name: "Construction"
+  - code: "5"
+    name: "Trade and transport etc."
+  - code: "6"
+    name: "Information and communication"
+  - code: "7"
+    name: "Financial and insurance activities"
+  - code: "8"
+    name: "Real estate"
+  - code: "9"
+    name: "Other business services"
+  - code: "10"
+    name: "Public administration, education, health and culture"
+
+model:
+  target: "vitality_score"
+  test_quarters: 4              # Hold out last 4 quarters for testing (1 calendar year)
+  lag_periods: [1, 2, 3, 4]    # Lag features (quarters)
+  rolling_windows: [4, 8]       # Rolling mean windows (quarters)
+
+mlflow:
+  tracking_uri: "./artifacts/mlflow"
+  experiment_name: "dst_sector_health"
+
+monitoring:
+  drift_threshold: 0.15         # KS-test p-value threshold for data drift alert
+  performance_threshold: 0.20   # MAE increase threshold to trigger retraining alert
+
+paths:
+  raw_data: "./artifacts/raw"
+  processed_data: "./artifacts/processed"
+  models: "./artifacts/models"
+  metrics: "./artifacts/metrics"
+  reports: "./artifacts/reports"
