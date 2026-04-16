@@ -1,7 +1,7 @@
 # DST Sector Health Forecaster
 **MSc BDS — MLOps Exam | Statistics Denmark**
 
-An end-to-end MLOps pipeline that fetches live data from the **Statistics Denmark (DST) StatBank API** and forecasts a **Sector Vitality Score (SVS)** for each of the 10 Danish industry sectors one quarter ahead. The pipeline runs automatically on a quarterly cron schedule via GitHub Actions and exposes predictions through a FastAPI REST endpoint.
+An end-to-end MLOps pipeline that fetches live data from the **Statistics Denmark (DST) StatBank API** and forecasts a **Sector Vitality Score (SVS)** for each of the 10 Danish industry sectors one quarter ahead. The pipeline can be adjusted to run automatically on a quarterly cron schedule via GitHub Actions and exposes predictions through a FastAPI REST endpoint.
 
 > **Data source:** [Statistics Denmark StatBank API](https://www.dst.dk/en/Statistik/hjaelp-til-statistikbanken/api) — free, no authentication required, CC 4.0 BY licence.
 
