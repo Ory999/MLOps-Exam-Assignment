@@ -33,8 +33,8 @@ def compute_feature_stats(df: pd.DataFrame, feature_cols: list[str]) -> dict:
 
 
 def detect_data_drift(
-    df_reference: pd.DataFrame,   # training data distribution
-    df_current: pd.DataFrame,     # new incoming data
+    df_reference: pd.DataFrame,
+    df_current: pd.DataFrame,
     feature_cols: list[str],
     threshold: float = 0.15,
 ) -> dict:
@@ -65,10 +65,11 @@ def detect_data_drift(
         cur_vals = df_current[col].dropna().values
 
         if len(ref_vals) < 5 or len(cur_vals) < 5:
-            continue  # not enough data for a meaningful test
+            continue
 
         ks_stat, p_value = stats.ks_2samp(ref_vals, cur_vals)
-        is_drifted = p_value < threshold
+        # scipy returns numpy types — convert explicitly so JSON serialisation works
+        is_drifted = bool(p_value < threshold)
 
         results[col] = {
             "ks_statistic": round(float(ks_stat), 4),
@@ -78,7 +79,7 @@ def detect_data_drift(
         if is_drifted:
             drifted_features.append(col)
 
-    overall_drift = len(drifted_features) / max(len(results), 1) > 0.3
+    overall_drift = bool(len(drifted_features) / max(len(results), 1) > 0.3)
 
     report = {
         "timestamp": datetime.now().isoformat(),
@@ -133,7 +134,8 @@ def monitor_performance(
     current_rmse = np.sqrt(mean_squared_error(y_true, y_pred))
 
     degradation_pct = (current_mae - baseline_mae) / max(baseline_mae, 1e-9)
-    needs_retrain = current_mae > baseline_mae * (1 + threshold_pct)
+    # sklearn returns numpy floats — bool() ensures JSON-serialisable Python bool
+    needs_retrain = bool(current_mae > baseline_mae * (1 + threshold_pct))
 
     report = {
         "timestamp": datetime.now().isoformat(),
@@ -158,6 +160,7 @@ def monitor_performance(
 
     return report
 
+
 # Prediction distribution monitoring
 
 def monitor_prediction_distribution(
@@ -171,7 +174,8 @@ def monitor_prediction_distribution(
     can indicate a problem with incoming data rather than model drift.
     """
     ks_stat, p_value = stats.ks_2samp(y_pred_train, y_pred_new)
-    is_drifted = p_value < threshold
+    # scipy returns numpy types — convert explicitly
+    is_drifted = bool(p_value < threshold)
 
     report = {
         "ks_statistic": round(float(ks_stat), 4),
@@ -184,16 +188,36 @@ def monitor_prediction_distribution(
     }
     return report
 
+
 # Save monitoring report
+
+def _make_serializable(obj):
+    """Recursively convert numpy types to JSON-serialisable Python types."""
+    if isinstance(obj, dict):
+        return {k: _make_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_make_serializable(v) for v in obj]
+    elif isinstance(obj, (np.bool_,)):
+        return bool(obj)
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
+
 
 def save_monitoring_report(report: dict, report_dir: str = "./artifacts/reports") -> str:
     """Save a monitoring report as a timestamped JSON file."""
+    # Sanitise all numpy types before serialising
+    report = _make_serializable(report)
+
     Path(report_dir).mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = f"{report_dir}/monitoring_{timestamp}.json"
     with open(path, "w") as f:
         json.dump(report, f, indent=2)
-    # Keep a 'latest' copy for the API / dashboard to read
     with open(f"{report_dir}/monitoring_latest.json", "w") as f:
         json.dump(report, f, indent=2)
     logger.info(f"Monitoring report saved → {path}")
