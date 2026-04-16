@@ -3,7 +3,7 @@
 
 An end-to-end MLOps pipeline that fetches live data from the **Statistics Denmark (DST) StatBank API** and forecasts a **Sector Vitality Score (SVS)** for each of the 10 Danish industry sectors one quarter ahead. The pipeline can be adjusted to run automatically on a quarterly cron schedule via GitHub Actions and exposes predictions through a FastAPI REST endpoint.
 
-> **Data source:** [Statistics Denmark StatBank API](https://www.dst.dk/en/Statistik/hjaelp-til-statistikbanken/api) — free, no authentication required, CC 4.0 BY licence.
+> **Data source:** [Statistics Denmark StatBank API](https://www.dst.dk/en/Statistik/hjaelp-til-statistikbanken/api) free, no authentication required, CC 4.0 BY licence.
 
 ---
 
@@ -51,7 +51,7 @@ MLOps-Exam-Assignment/
 
 ## What the Pipeline Does
 
-The pipeline forecasts a **Sector Vitality Score (SVS)** — a normalised [0, 1] index measuring the balance between enterprise births and bankruptcies in each sector. A score near 1 indicates sector expansion; near 0 indicates contraction.
+The pipeline forecasts a **Sector Vitality Score (SVS)** a normalised [0, 1] index measuring the balance between enterprise births and bankruptcies in each sector. A score near 1 indicates sector expansion; near 0 indicates contraction.
 
 **Five steps run sequentially:**
 
@@ -133,7 +133,7 @@ The pipeline forecasts a **Sector Vitality Score (SVS)** — a normalised [0, 1]
 | Ridge | 0.1123 | 0.1443 | -11.34 | 87% |
 | XGBoost | 0.2473 | 0.2614 | -39.48 | 40% |
 
-The **Naive model wins**. With only ~10 training quarters per sector after lagging, XGBoost cannot generalise — it overfits the 2019–2022 growth phase and fails to extrapolate the 2022–2023 decline. Negative R² is expected at this data volume; the pipeline is designed to improve automatically as DST publishes new DEMO14 data each year.
+The **Naive model wins**. With only ~10 training quarters per sector after lagging, XGBoost cannot generalise, it overfits the 2019–2022 growth phase and fails to extrapolate the 2022–2023 decline. Negative R² is expected at this data volume; the pipeline is designed to improve automatically as DST publishes new DEMO14 data each year. Thus the reliability of XGBoost is currently not good, but as time goes on more data is added to the database, which in fututre scenarioes will give XGBoost a better datafoundation to train on. Another important note is currently data from 2019-2022 is the train basis, which was the period with Covid-19 locdowns, which heavily effected some areas of work.
 
 ---
 
