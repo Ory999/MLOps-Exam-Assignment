@@ -281,6 +281,7 @@ Results are saved to `artifacts/reports/monitoring_latest.json` and served via t
 | Folder structure | `artifacts/*/.gitkeep` | No — tracked to preserve structure on clone |
 
 Artifact contents are not stored in the repository. On a GitHub Actions run they are uploaded as downloadable bundles. Locally they are written to disk and read by the API.
+Direct acess to the last run is found under Actions -> Fix numpy bool_ JSON serialization in monitoring report #7 (https://github.com/Ory999/MLOps-Exam-Assignment/actions/runs/24525069469). Here the artifact with the outputs can be downloaded, last run is called "pipeline-artifacts-7"
 
 ---
 
