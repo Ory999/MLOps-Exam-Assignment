@@ -57,7 +57,7 @@ The pipeline forecasts a **Sector Vitality Score (SVS)** a normalised [0, 1] ind
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│  GitHub Actions cron  OR: python run_pipeline.py        │
+│  GitHub Actions cron  OR: python run_pipeline.py
 └────────────────────────┬───────────────────────────────────┘
                          │
       ┌──────────────────▼─────────────────────┐
